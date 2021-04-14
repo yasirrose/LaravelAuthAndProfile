@@ -1,17 +1,17 @@
 <?php
-   
+
 namespace App\Http\Controllers\API;
-   
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
 use Validator;
-   
-class RegisterController
+
+class RegisterController extends Controller
 {
     /**
-     * Register api
+     * Register api registeres the user and send the activation PIN in Email
      *
      * @return \Illuminate\Http\Response
      */
@@ -25,154 +25,93 @@ class RegisterController
             'avatar' => 'required|image|mimes:jpeg,png,jpg|dimensions:max_width=256,max_height=256',
             'c_password' => 'required|same:password',
         ]);
-   
-        if($validator->fails()){
-            $response = [
-                'success' => false,
-                'message' => 'Validation Error',
-                'data'   =>  $validator->errors()
-            ];
 
-            return response()->json($response);           
+        if ($validator->fails()) {
+            return response()->json(["errors" => $validator->errors()], 422);
         }
-    
-        $input = $request->all();
-        $randomid = mt_rand(100000,999999); 
-        $input['password'] = bcrypt($input['password']);
-        $filename =  time() . '.' . $request->avatar->getClientOriginalExtension();
-        $request->avatar->move(public_path('users') . '/images/' , $filename);
 
-        $user =  new User;
-        $user->name      = $input['name'];
-        $user->user_name = $input['user_name'];
-        $user->email     = $input['email'];
-        $user->password  = $input['password'];
-        $user->avatar    = 'users/images/' . $filename;
-        $user->pin       =  $randomid;
+        $randomid = mt_rand(100000, 999999);
+        $request->password = bcrypt($request->password);
+        $filename = time() . '.' . $request->avatar->getClientOriginalExtension();
+        $request->avatar->move(public_path('users') . '/images/', $filename);
+
+        $user = new User;
+        $user->name = $request->name;
+        $user->user_name = $request->user_name;
+        $user->email = $request->email;
+        $user->password = $request->password;
+        $user->avatar = 'users/images/' . $filename;
+        $user->pin = $randomid;
         $user->save();
 
-        $success['name']  =  $user->name;
-        $success['user_role'] =  'user';       
+        $success['name'] = $user->name;
+        $success['user_role'] = 'user';
 
-        $email_send_to = $input['email'];
-        $dataArr = array(
-            'pin' => $randomid,
-        );
+        $email_send_to = $request->email;
+        $mailData = array('pin' => $randomid);
 
         $subject = 'Verify Account';
 
-        Mail::send('emails.verification', $dataArr, function ($message) use ($email_send_to)
-        {
+        Mail::send('emails.verification', $mailData, function ($message) use ($email_send_to) {
             $message->to($email_send_to)->subject('Verification');
         });
+        return response()->json(["message" => "An account confirmation PIN is sent to your Email."], 201);
+    }
 
-        $response = [
-            'success' => true,
-            'data'    => $success,
-            'message' => 'Email with A confirmation PIN is sent to your Email.',
-        ];
-
-        return response()->json($response, 200);
-    } 
-
-    public function send_invitation_link(Request $request){       
+    public function send_invitation_link(Request $request)
+    {
         $user_role = $request->user()->user_role;
-        if($user_role == 'admin'){
-             $validator = Validator::make($request->all(), [
+        if ($user_role == 'admin') {
+            $validator = Validator::make($request->all(), [
                 'email_send_to' => 'required',
             ]);
-       
-            if($validator->fails()){
-                $response = [
-                    'success' => false,
-                    'message' => 'Validation Error',
-                    'data'   =>  $validator->errors()
-                ];
-
-                return response()->json($response);        
+            if ($validator->fails()) {
+                return response()->json(["errors" => $validator->errors()], 422);
             }
-
             $email_send_to = $request->email_send_to;
             $details = [
                 'title' => 'Verification',
                 'heading' => 'Please click on the link to register your account.',
-                'text' =>  'Register',
+                'text' => 'Register',
             ];
             $subject = 'Invitation';
-
-
-            Mail::send('emails.invitation', $details, function ($message) use ($email_send_to)
-            {
+            Mail::send('emails.invitation', $details, function ($message) use ($email_send_to) {
                 $message->to($email_send_to)->subject('Invitation');
             });
+            return response()->json(["message" => "Invitation link sent successfully."], 200);
+        } else {
+            return response()->json(["message" => "Unauthenticated."], 401);
+        }
+    }
 
-            $response = [
-                'success' => true,
-                'data'    => 'Email Sent',
-                'message' => 'Email Sent Successfully.',
-            ];
-
-            return response()->json($response, 200);
-        }else{
-            $response = [
-                'success' => false,
-                'message' => 'Unauthorised',
-                'error'   =>  'Unauthorised'
-            ];
-
-            return response()->json($response);    
-        }       
-    }    
-
-    public function activate(Request $request){
-
-        $validator =  Validator::make($request->all(), [
+    /**
+     * Activate user account with PIN
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function activate(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
             'email' => 'required|exists:users',
             'pin' => 'required'
         ]);
 
-        if($validator->fails()){
-            $response = [
-                'success' => false,
-                'message' => 'Validation Error',
-                'data'   =>  $validator->errors()
-            ];
-
-            return response()->json($response);             
+        if ($validator->fails()) {
+            return response()->json(["errors" => $validator->errors()], 422);
         }
 
-        $pin = $request->pin;
         $user = User::where('email', $request->email)->first();
 
-        if($user->is_active == 1){
-            $response = [
-                'success' => true,
-                'data'    => 'active',
-                'message' => 'Your account is already active.',
-            ];
-            return response()->json($response,200);      
+        if ($user->is_active == 1) {
+            return response()->json(["message" => "Your account is already active."], 200);
         }
-
-        if(isset($user->pin) && $pin == $user->pin){
+        if (isset($user->pin) && $request->pin == $user->pin) {
             $user->is_active = 1;
             $user->pin = null;
             $user->save();
-
-            $response = [
-                'success' => true,
-                'data'    => 'Activated',
-                'message' => 'Your account has been activated! Please Login.',
-            ];
-
-            return response()->json($response, 200);
-        }else{             
-            $response = [
-                'success' => false,
-                'message' => 'Invalid Pin',
-                'error'   =>  'The PIN you enetered is invalid.'
-            ];
-
-            return response()->json($response);      
+            return response()->json(["message" => "Your account has been activated! Please login."], 200);
+        } else {
+            return response()->json(["message" => "The PIN you entered is invalid."], 400);
         }
     }
 }

@@ -1,75 +1,83 @@
 ## Setting Up Project
 
-Place project folder in C:\xampp\htdocs:
-Open CMD in the project Folder and Follow the Steps below one by one:
+##### 1. Clone the project in `C:/xampp/htdocs` using the following commands
 
-Install Composer Files by running : composer install
-Create a file .env in project root folder and paste content of .env.example file.
-Replace Crendetials for MAIL setting in .env file with the following with your details:
+```bash
+    git clone https://github.com/yasirrose/LaravelAuthAndProfile.git laravel_assignment
+    cd laravel_assignment
+    composer update
+```
 
-MAIL_DRIVER=smtp
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USERNAME= YOUR GMAIL ACCOUNT EMAIL
-MAIL_PASSWORD= YOUR GMAIL ACCOUNT PASSWORD
-MAIL_ENCRYPTION=tls
-MAIL_FROM_ADDRESS=YOUR GMAIL EMAIL
-MAIL_FROM_NAME="${APP_NAME}"
+##### 2. Create the VirtualHost to run the Project (Windows Only)
 
+Add the following code in `C:\xampp\apache\conf\extra\httpd-vhosts.conf`
 
-Generate Key: php artisan key:generate
-Run Migration: php artisan migrate
-Run Seeder For Dummy Data: php artisan db:seed
-
-Run php artisan passport:client --password
-Enter Name and Press Enter
-Paste the Client id and Client Secret in .ENV file.
-
-For Admin: 
-UN: admin@admin.com
-PW: 123456
-
-For User:
-UN:test@gmail.com
-PW: 123456
-
-
-NOTE: Import Insomnia_2021-04-14_APIs.json  APIs file in the project root folder  to the Insomnia.
-
-To Test APIs using Virtual Host:
-
-1) Go to  C:\xampp\apache\conf\extra
-File: httpd-vhosts.conf
-
-Edit the file and add the following to the end of the file:
-
+```apacheconf
 <VirtualHost *:80>
     ServerAdmin webmaster@laravel_assignment.test
     DocumentRoot "C:/xampp/htdocs/laravel_assignment/public"
     ServerName laravel_assignment.test
     ServerAlias www.laravel_assignment.test
 </VirtualHost>
+```
 
+Add the following in `hosts` file located at `C:\Windows\System32\drivers\etc\`
 
-2) Go the C:\Windows\System32\drivers\etc\
-File: hosts
+```text
+    127.0.0.1  laravel_assignment.test
+```
 
-Edit the file and add the following to the end of the file:
+Note: For Linux or mac Users Create the virtual host based upon the webserver
 
-127.0.0.1      laravel_assignment.test
-::1            laravel_assignment.test
+##### 3. Rename the `.env.example` to `.env` and update the Environment variables for the Database, Email and Passport Keys
 
-3) Restart Apache and Mysql in Xampp.
+| NAME                                      | default             | required                      | type    | description                                                                             |
+|-------------------------------------------|---------------------|-------------------------------|---------|------------------------------------|
+| DB_HOST                                   | "unspecified"       | :white_check_mark:            | str     | DATABASE HOST                      |
+| DB_PORT                                   | False               | :white_check_mark:            | str     | DATABASE PORT                      |
+| DB_DATABASE                               | "unspecified"       | :white_check_mark:            | str     | DATABSE NAME                       |
+| DB_USERNAME                               | "unspecified"       | :white_check_mark:            | str     | DATABSE USERNAME                   |
+| DB_PASSWORD                               | "unspecified"       | :white_check_mark:            | str     | DATABASE PASSWORD                  |
+| MAIL_HOST                                 | "unspecified"       | :white_check_mark:            | str     | EMAIL HOST                         |
+| MAIL_PORT                                 | "unspecified"       | :white_check_mark:            | str     | EMAIL USERNAME                     |
+| MAIL_USERNAME                             | "unspecified"       | :white_check_mark:            | str     | EMAIL USRNAME                      |
+| MAIL_PASSWORD                             | "unspecified"       | :white_check_mark:            | str     | EMAIL PASSWORD                     |
+| MAIL_ENCRYPTION                           | "unspecified"       | :white_check_mark:            | Boolean | MAIL ENCRYPTION                    |
+| MAIL_FROM_ADDRESS                         | "unspecified"       | :white_check_mark:            | str     | MAIL FROM ADDRESS                  |
+| MAIL_FROM_NAME                            | "unspecified"       | :white_check_mark:            | str     | MAIL FROM NAME                     |
+| PASSPORT_PERSONAL_ACCESS_CLIENT_ID        | "unspecified"       | :white_check_mark:            | str     | PASSPORT CLIENT ID                 |
+| PASSPORT_PERSONAL_ACCESS_CLIENT_SECRET    | "unspecified"       | :white_check_mark:            | str     | PASSPORT CLIENT SECRET             |
 
-4) Test the APIs using Postman collection for this project.
+For Passport client id and client secret run the following commands and follow instructions this will generate the client id and client secret and paste that values in the `.env` file
 
+```bash
+php artisan key:generate
+php artisan passport:client --password
+
+```
+##### 4. Run the migrations and seed the database
+
+```bash
+php artisan migrate
+php artisan db:seed
+```
+
+##### Credentials
+For Admin:
+UN: admin@admin.com 
+PW: 123456
+
+For User:
+UN:test@gmail.com 
+PW: 123456
+
+NOTE: Not for testing import the provided insonmia Collection in the application and you will get the workspace and API endpoints ready for testing.
+
+![img.png](img.png)
 
 APIs Testing Note:
-1) Login the User
-2) Copy the token from the response of login API and replace with the token in the APIs that requirs token.
-3) Admin can send invitation link after login to the desired user wby providing email in the API. EMail will be received after sending invitation with a dummy link. After that Register API is used to register a user and for the account activation Pin code is sent to the email after registeration and PIN code is used in Activate Account API to activate the account.
-4)Update Profile API is used to update the profile information with a respone of updated data after API is hit.
 
+Test the Api's as they are listed in the Insonmia collection.
 
 
 

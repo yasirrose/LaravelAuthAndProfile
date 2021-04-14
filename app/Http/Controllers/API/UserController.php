@@ -1,34 +1,32 @@
 <?php
-   
+
 namespace App\Http\Controllers\API;
-   
+
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Validator;
-   
-class UserController
+
+class UserController extends Controller
 {
     /**
-     * User Profile api
+     * User Profile Returns the user profile
      *
      * @return \Illuminate\Http\Response
      */
     public function profile(Request $request){
-
-        $response = [
-            'success' => true,
-            'user' => $request->user(),
-        ];
-
-        return response()->json($response, 200);
+        return response()->json($request->user(), 200);
     }
 
+    /**
+     * Update user profile
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function update_profile(Request $request){
-
         $validator = Validator::make($request->all(), [
-            'id'       => 'required|numeric',
-            'email' => 'required|email|unique:users,email,'.$request->id,
+            'email' => 'required|email|unique:users,email,'.$request->user()->id,
             'avatar' => 'dimensions:max_width=256,max_height=256',
             'name' => 'required',
             'user_name' => 'required|min:4|max:20',
@@ -36,27 +34,19 @@ class UserController
         ]);
 
         if($validator->fails()){
-            $response = [
-                'success' => false,
-                'message' => 'Validation Error',
-                'data'   =>  $validator->errors()
-            ];
-
-            return response()->json($response);        
+            return response()->json(["errors" => $validator->errors()], 422);
         }
 
+        $user = User::where('id',$request->user()->id)->first();
 
-        $input = $request->all();
+        if($user){
+            $user->name      = $request->name;
+            $user->user_name = $request->user_name;
+            $user->email     = $request->email;
 
-        $user = User::where('id',$request->id)->first();
-        if(isset($user)){
-            $user->name      = $input['name'];
-            $user->user_name = $input['user_name'];
-            $user->email     = $input['email'];             
-
-            if(isset($input['password'])){
-                $input['password'] = bcrypt($input['password']);
-                $user->password  = $input['password'];   
+            if($request->has("password")){
+                $request->password = bcrypt($request->password);
+                $user->password  = $request->password;
             }
 
             if($request->avatar){
@@ -64,25 +54,15 @@ class UserController
                 $request->avatar->move(public_path('users') . '/images/' , $filename);
                 $user->avatar    = 'users/images/' . $filename;
             }
-            $user->save();
 
-            $success['user'] =  $user;
+            if ($user->save()){
+                return response()->json(["message" => "Your profile is updated!"], 200);
+            }else{
+                return response()->json(["message" => "Profile update failed!"], 400);
+            }
 
-            $response = [
-                'success' => true,
-                'data'    => 'Updated',
-                'message' => 'Your profile is updated!.',
-            ];
-
-            return response()->json($response, 200);
         }else{
-            $response = [
-                'success' => false,
-                'message' => 'not found.',
-                'data'   =>  'User does not exist!'
-            ];
-
-            return response()->json($response);   
-        }       
-    }    
+            return response()->json(["message" => "Unauthenticated."], 401);
+        }
+    }
 }

@@ -1,40 +1,31 @@
 <?php
-   
+
 namespace App\Http\Controllers\API;
-   
+
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Validator;
-   
-class LoginController
-{   
+
+class LoginController extends Controller
+{
     /**
-     * Login api
+     * Login API returns the Access token or error
      *
      * @return \Illuminate\Http\Response
      */
     public function login(Request $request)
     {
-        $validator =  Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'email' => 'required|email|exists:users,email',
             'password' => 'required'
         ]);
 
-        if($validator->fails()){
-            $response = [
-                'success' => false,
-                'message' => 'Validation Error',
-                'data'   =>  $validator->errors()
-            ];
-
-            return response()->json($response,200);        
+        if ($validator->fails()) {
+            return response()->json(["errors" => $validator->errors()], 422);
         }
 
-        $url = url('/oauth/token');
-
-        $response = Http::asForm()->post($url, [
+        $response = Http::asForm()->post(url('/oauth/token'), [
             'grant_type' => 'password',
             'client_id' => env('PASSPORT_PERSONAL_ACCESS_CLIENT_ID'),
             'client_secret' => env('PASSPORT_PERSONAL_ACCESS_CLIENT_SECRET'),
@@ -42,19 +33,18 @@ class LoginController
             'password' => $request->password,
             'scope' => '*',
         ]);
-        return $response->json();      
+        return $response->json();
     }
 
-    public function logout(Request $request){
-        $token =  $request->user()->token();
+    /**
+     * Logout the User and Revoke the User Token
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function logout(Request $request)
+    {
+        $token = $request->user()->token();
         $token->revoke();
-
-        $response = [
-            'success' => true,
-            'data'    => 'success',
-            'message' => 'User Logged out successfully',
-        ];
-
-        return response()->json($response, 200);
+        return response()->json(["message" => "User Logged out successfully"], 200);
     }
 }

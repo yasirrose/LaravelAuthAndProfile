@@ -18,7 +18,7 @@ use App\Http\Controllers\API\UserController;
 */
 
 Route::post('register', [RegisterController::class, 'register']);
-Route::post('activate-account', [RegisterController::class, 'activate']);
+Route::put('activate-account', [RegisterController::class, 'activate']);
 Route::post('login', [LoginController::class, 'login']);
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
@@ -27,7 +27,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::middleware('auth:api')->group( function () {
     Route::post('logout', [LoginController::class, 'logout']);
     Route::post('send-invitation-link', [RegisterController::class, 'send_invitation_link']);
-    Route::post('profile', [UserController::class, 'profile']);  
-    Route::post('update-profile', [UserController::class, 'update_profile']);    
+    Route::get('profile', [UserController::class, 'profile']);
+    Route::post('update-profile', [UserController::class, 'update_profile']);
 });
 
