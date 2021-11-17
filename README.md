@@ -31,6 +31,8 @@ Note: For Linux or mac Users Create the virtual host based upon the webserver
 
 ##### 3. Rename the `.env.example` to `.env` and update the Environment variables for the Database, Email and Passport Keys
 
+Update MAIL_USERNAME & MAIL_PASSWORD with any of the gmail account credentials and Turn off "Less secure app access" in gmail account for email sending.
+
 | NAME                                      | default             | required                      | type    | description                                                                             |
 |-------------------------------------------|---------------------|-------------------------------|---------|------------------------------------|
 | DB_HOST                                   | "unspecified"       | :white_check_mark:            | str     | DATABASE HOST                      |
@@ -50,16 +52,19 @@ Note: For Linux or mac Users Create the virtual host based upon the webserver
 
 For Passport client id and client secret run the following commands and follow instructions this will generate the client id and client secret and paste that values in the `.env` file
 
-```bash
-php artisan key:generate
-php artisan passport:client --password
 
-```
 ##### 4. Run the migrations and seed the database
 
 ```bash
 php artisan migrate
 php artisan db:seed
+```
+
+```bash
+php artisan key:generate
+php artisan passport:client --password
+php artisan passport:keys
+
 ```
 
 ##### Credentials
